@@ -79,8 +79,8 @@
     <InfoHospital
       @update="clear($event)"
       ref="infoHospital"
-      v-show="selectedHospital.id"
-      :hospital="selectedHospital"
+      v-show="selectedHospitalId"
+      :hospitalId="selectedHospitalId"
     ></InfoHospital>
   </div>
 </template>
@@ -114,41 +114,37 @@ export default {
       },
       epis: [],
       hospitais: [],
-      selectedHospital: {
-        nome: "",
-        contato: "",
-        telefone: "",
-        endereco: {},
-        epis: []
-      },
+      selectedHospitalId: null,
       map: null,
       dSearch: debounce(() => this.search(), 200),
       heatLayer: null,
       markersGroup: null,
 
-      yellowIcon: L.IconMaterial.icon({
-        icon: "local_pharmacy",
-        markerColor: this.iconColors()[0],
-        outlineWidth: 0
-      }),
+      icons: {
+        NOVO: L.IconMaterial.icon({
+          icon: "local_pharmacy",
+          markerColor: "rgba(200,200,50,0.9)",
+          outlineWidth: 0
+        }),
 
-      redIcon: L.IconMaterial.icon({
-        icon: "local_pharmacy",
-        markerColor: this.iconColors()[1],
-        outlineWidth: 0
-      }),
+        PEDIDO_REALIZADO: L.IconMaterial.icon({
+          icon: "local_pharmacy",
+          markerColor: "rgba(200, 0, 0,0.9)",
+          outlineWidth: 0
+        }),
 
-      blueIcon: L.IconMaterial.icon({
-        icon: "local_pharmacy",
-        markerColor: this.iconColors()[2],
-        outlineWidth: 0
-      }),
+        PEDIDO_ENCAMINHADO: L.IconMaterial.icon({
+          icon: "local_pharmacy",
+          markerColor: "rgba(30, 139, 195,0.9)",
+          outlineWidth: 0
+        }),
 
-      greeIcon: L.IconMaterial.icon({
-        icon: "local_pharmacy",
-        markerColor: this.iconColors()[3],
-        outlineWidth: 0
-      })
+        PEDIDO_ENTREGUE: L.IconMaterial.icon({
+          icon: "local_pharmacy",
+          markerColor: "rgba(0, 200, 0,0.9)",
+          outlineWidth: 0
+        })
+      }
     };
   },
   mounted() {
@@ -159,10 +155,13 @@ export default {
     }).addTo(this.map);
     this.markersGroup = L.featureGroup()
       .bindPopup("", { minWidth: "400" })
-      .on("click", e => {
-        this.selectedHospital = this.filterHospitalById(e.layer._id);
+      .on("click", async e => {
+        this.selectedHospitalId = e.layer._id;
         let info = this.$refs["infoHospital"].$refs.info;
         this.markersGroup.setPopupContent(info);
+      })
+      .on("popupclose", e => {
+        this.selectedHospitalId = null;
       })
       .addTo(this.map);
   },
@@ -187,6 +186,7 @@ export default {
     },
 
     setHeatLayer(hospitais) {
+      this.clearHeatLayer();
       let coordinates = hospitais.map(
         h =>
           h.endereco &&
@@ -198,17 +198,11 @@ export default {
     },
 
     setMarkers(hospitais) {
-      let icons = {
-        NOVO: this.yellowIcon,
-        PEDIDO_REALIZADO: this.redIcon,
-        PEDIDO_ENCAMINHADO: this.blueIcon,
-        PEDIDO_ENTREGUE: this.greeIcon
-      };
-
-      for (let i = 0; i < hospitais.length; i++) {
+      this.clearMarkers();
+      for (let i in hospitais) {
         const h = hospitais[i];
         let mark = L.marker(h.endereco.geo.coordinates, {
-          icon: icons[h.status]
+          icon: this.icons[h.status]
         });
         mark._id = h.id;
         this.markersGroup.addLayer(mark);
@@ -228,41 +222,14 @@ export default {
       if (this.markersGroup) this.markersGroup.clearLayers();
     },
 
-    filterHospitalById(_id) {
-      return this.hospitais.find(h => h.id === _id);
-    },
-
     clear(e) {
-      let icons = {
-        NOVO: this.yellowIcon,
-        PEDIDO_REALIZADO: this.redIcon,
-        PEDIDO_ENCAMINHADO: this.blueIcon,
-        PEDIDO_ENTREGUE: this.greeIcon
-      };
-      this.selectedHospital = {
-        nome: "",
-        contato: "",
-        telefone: "",
-        endereco: {},
-        epis: []
-      };
-
       let marker = this.markersGroup.getLayers().find(l => l._id === e.id);
-
       this.markersGroup.removeLayer(marker);
-      marker.icon = icons[e.status];
-      this.markersGroup.closePopup();
-      this.markersGroup.addLayer(marker);
-      this.map.invalidateSize();
-    },
-
-    iconColors() {
-      return [
-        "rgba(200,200,50,0.9)",
-        "rgba(200, 0, 0,0.9)",
-        "rgba(30, 139, 195,0.9)",
-        "rgba(0, 200, 0,0.9)"
-      ];
+      let mark = L.marker(marker.getLatLng(), {
+        icon: this.icons[e.status]
+      });
+      mark._id = e.id;
+      this.markersGroup.addLayer(mark);
     }
   }
 };
