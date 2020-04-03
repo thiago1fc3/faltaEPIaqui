@@ -115,7 +115,7 @@ export default {
   async updated() {
     if (
       !this.hospital ||
-      (this.hospital && this.hospitalId !== this.hospital.id)
+      (this.hospital && this.hospitalId && this.hospitalId !== this.hospital.id)
     )
       this.hospital = await this.$rest.hospitais.findById(this.hospitalId);
   },
