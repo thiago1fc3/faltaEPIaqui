@@ -4,7 +4,7 @@
     <div class="p-grid basic-layout">
       
       <div id="container-filter" class="container-filter">
-        <div class="open-close" @click="openCloseFilter()">
+        <div class="open-close" @click="openCloseFilter()" :style="open ? 'right: 20px' : 'right: -10px'">
           <i v-show="open" class="pi pi-chevron-left"></i>
           <i v-show="!open" class="pi pi-chevron-right"></i>
         </div>
@@ -149,8 +149,10 @@ export default {
     };
   },
   mounted() {
-    if(!(this.$store.state.user && this.$store.state.user.user_name))
+    if(!this.$oauth.isAuthenticated) {
+      this.$toast.warning("Você não está autenticado. Por favor, faça login.")
       this.$router.push('/login')
+    }
 
     // close filter if width window < 600px
     if(window.innerWidth < 600) {
@@ -322,8 +324,7 @@ export default {
       display: block;
       position: relative;
       padding: 0;
-      overflow-y: auto;
-      overflow-x: hidden;
+      overflow: hidden;
       transition: width 0.2s;
     }
     .container-map {
@@ -378,8 +379,6 @@ export default {
   .open-close {
     display: block;
     position: absolute;
-    right: -10px;
-    z-index: 201;
     cursor: pointer;
     padding: 5px 10px;
   }

@@ -110,11 +110,6 @@ export default class OAuthTokenService {
         return access_token
     }
 
-    async getUser() {
-      const { payload = {} } = this;
-      store.commit('SET', payload )
-    }
-
     async checkAccessToken() {
         if (this.tokenIsExpired())
             await this.refreshAccessToken()
@@ -128,16 +123,15 @@ export default class OAuthTokenService {
             username,
             password
         }).then(async res => {
-            const result = await this.setToken(res)
-            await this.getUser()
-            
-            return result;
+            return await this.setToken(res);
         })
     }
 
     async logout() {
-      store.commit('SET', null )
-      store.commit('SET_JWT', null )
+        if (!this.accessToken) return null
+        
+        this.accessToken = null
+        this.refreshToken = null
     }
 }
 
