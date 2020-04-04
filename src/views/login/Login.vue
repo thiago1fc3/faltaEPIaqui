@@ -16,7 +16,11 @@
           <input type="password" id="password"  v-model="pwd" placeholder="Digite sua senha..." required="required">
         </div>
         
-        <button class="btn-login" @click="login()">ENTRAR</button>
+        <div class="error" v-show="errMessage != ''">
+          {{ errMessage }}
+        </div>
+
+        <button class="btn-login" @click.prevent.stop="login()">ENTRAR</button>
       </form>
 
     </div>
@@ -29,8 +33,14 @@ export default {
   data() {
     return {
       mail: '',
-      pwd: ''
+      pwd: '',
+      errMessage: ''
     }
+  },
+
+  mounted() {
+    if(this.$store.state.user && this.$store.state.user.user_name)
+      this.$router.push('/')
   },
 
   methods: {
@@ -39,11 +49,18 @@ export default {
         var inp = document.getElementById("form");
 
         if (inp.checkValidity()) {
-          // let res = await this.$oauth.login({
-          //   user: this.mail,
-          //   password: this.pwd
-          // })
-          this.$router.push('/')
+          const resp = await this.$oauth.login(this.mail, this.pwd)
+            .then(res => {
+              this.$router.push('/')
+            })
+            .catch(error => {
+              this.err = true;
+              this.errMessage =
+                error.response && error.response.data.error === "invalid_grant"
+                  ? "Usuário e/ou senha inválidos!"
+                  : "Verifique suas credenciais";
+              console.error(error);
+            });
         }
       } catch (error) {
         console.error(error)
@@ -96,6 +113,15 @@ export default {
           border-radius: 3px;
           border: 1px solid #eee;
         }
+      }
+      .error {
+        padding: 10px;
+        background-color: #f8d7da;
+        border: 1px solid #f5c6cb;
+        border-radius: 3px;
+        color: #721c24;
+        margin-top: 10px;
+        text-align: center;
       }
       .btn-login {
         margin-top: 10px;

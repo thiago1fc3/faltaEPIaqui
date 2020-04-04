@@ -149,6 +149,9 @@ export default {
     };
   },
   mounted() {
+    if(!(this.$store.state.user && this.$store.state.user.user_name))
+      this.$router.push('/login')
+
     // close filter if width window < 600px
     if(window.innerWidth < 600) {
       document.getElementById('container-filter').style.width = '20px'
@@ -183,7 +186,7 @@ export default {
     this.getEpis();
     this.search();
 
-    let evtSource = new EventSource(`${API_URL}/stream/web`);
+    let evtSource = new EventSource(`${API_URL}api/stream/web`);
 
     evtSource.onmessage = e => {
       let event = JSON.parse(e.data);
