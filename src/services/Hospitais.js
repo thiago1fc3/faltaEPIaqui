@@ -2,7 +2,7 @@ import { RestClient } from "./RestClient";
 
 export const hospitais = new (class extends RestClient {
     constructor() {
-        super("hospitais");
+        super("/api/hospitais");
     }
 
     encaminharPedido(id, data = [], config = {}) {
