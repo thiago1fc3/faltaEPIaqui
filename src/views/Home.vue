@@ -1,9 +1,16 @@
 <template>
   <div class="flexgrid-container">
+    <navbar></navbar>
     <div class="p-grid basic-layout">
-      <div class="p-col-12 p-md-3">
+      
+      <div id="container-filter" class="container-filter">
+        <div class="open-close" @click="openCloseFilter()">
+          <i v-show="open" class="pi pi-chevron-left"></i>
+          <i v-show="!open" class="pi pi-chevron-right"></i>
+        </div>
         <div class="menu">
           <div>
+            <h4>Filtre sua pesquisa:</h4>
             <span class="p-float-label">
               <InputText style="width: 100%" v-model="filter.q" @input="dSearch" />
               <label for="busca">Busca geral</label>
@@ -61,13 +68,12 @@
             </div>
           </div>
         </div>
-        <div class="logo">
-          <img width="50" src="@/assets/img/logo.png" alt />
-        </div>
       </div>
-      <div class="p-col-12 p-md-9">
+
+      <div id="container-mapa" class="container-map">
         <div id="map" class="map"></div>
       </div>
+
     </div>
     <InfoHospital
       @update="clear($event)"
@@ -86,18 +92,22 @@ import "leaflet.heat";
 import "@/assets/js/leaflet/icon-material.js";
 import { debounce } from "@/util";
 import InfoHospital from "./InfoHospital";
+import navbar from "@/components/navbar.vue"
 
 import Checkbox from "primevue/checkbox";
 import InputText from "primevue/inputtext";
 import { API_URL } from "@/config";
+
 export default {
   components: {
     Checkbox,
     InfoHospital,
-    InputText
+    InputText,
+    navbar
   },
   data() {
     return {
+      open: true,
       filter: {
         q: "",
         status: [],
@@ -139,6 +149,13 @@ export default {
     };
   },
   mounted() {
+    // close filter if width window < 600px
+    if(window.innerWidth < 600) {
+      document.getElementById('container-filter').style.width = '20px'
+      document.getElementById('container-mapa').style.width = 'calc(100% - 20px)'
+      this.open = false
+    }
+
     this.map = L.map("map", { zoomControl: false }).setView(
       [-3.71664, -38.5423],
       6
@@ -176,8 +193,38 @@ export default {
       }
     };
   },
-
+  watch: {
+    'window.innerWidth': () => {
+      if(window.innerWidth < 600) {
+        document.getElementById('container-filter').style.width = '20px'
+        document.getElementById('container-mapa').style.width = 'calc(100% - 20px)'
+        this.open = false
+      }
+    }
+  },
   methods: {
+    openCloseFilter() {
+      let filter = document.getElementById('container-filter')
+      let mapa = document.getElementById('container-mapa')
+
+      if(this.open) {
+        filter.style.width = '20px'
+        mapa.style.width = 'calc(100% - 20px)'
+        this.open = !this.open
+      } else {
+        if(window.innerWidth <= 600) {
+          filter.style.width = '80%'
+          mapa.style.width = '20%'
+        } else if(window.innerWidth <= 992) {
+          filter.style.width = '40%'
+          mapa.style.width = '60%'
+        } else {
+          filter.style.width = '25%'
+          mapa.style.width = '75%'
+        }
+        this.open = !this.open
+      }
+    },
     getEpis() {
       this.$rest.epis.findAll().then(resp => {
         this.epis = resp;
@@ -261,31 +308,77 @@ export default {
 .flexgrid-container {
   .box,
   .basic-layout > div {
-    // background-color: #f1f1f1;
-
     background-color: #18655b;
   }
 
   .basic-layout {
     margin: 0;
-
     height: 100vh;
+
+    .container-filter {
+      display: block;
+      position: relative;
+      padding: 0;
+      overflow-y: auto;
+      overflow-x: hidden;
+      transition: width 0.2s;
+    }
+    .container-map {
+      display: block;
+      position: relative;
+      padding: 0;
+      transition: width 0.2s;
+    }
+    @media(max-width: 992px) {
+      .container-filter {
+        width: 40%;
+      }
+      .container-map {
+        width: 60%;
+      }
+    }
+    @media(max-width: 600px) {
+      .container-filter {
+        width: 80%;
+      }
+      .container-map {
+        width: 20%;
+      }
+    }
+    @media(min-width: 992px) {
+      .container-filter {
+        width: 25%;
+      }
+      .container-map {
+        width: 75%;
+      }
+    }
+
   }
 
   .map {
     width: 100%;
-    height: 100%;
-    border-radius: 0.333rem;
+    height: calc(100vh - 50px);
   }
 
   .menu {
     background: #f1f1f1;
-    padding: 2rem 1rem;
-    border-radius: 0.333rem;
+    padding: 20px;
+    height: calc(100vh - 50px);
+    overflow-y: auto;
+    overflow-x: hidden;
+
+    h4 {
+      font-weight: normal;
+    }
   }
-  .logo {
-    width: 50px;
-    padding: 1rem 0;
+  .open-close {
+    display: block;
+    position: absolute;
+    right: -10px;
+    z-index: 201;
+    cursor: pointer;
+    padding: 5px 10px;
   }
 }
 </style>
