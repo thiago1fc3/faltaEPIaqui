@@ -6,8 +6,8 @@
       <h3>QueroEPI</h3>
     </div>
 
-    <div class="logout">
-      <span @click="logout()">Sair</span>
+    <div class="logout" @click="logout()">
+      <span>Sair</span>
       <i class="pi pi-sign-out"></i>
     </div>
 
@@ -61,6 +61,9 @@ export default {
 
     span {
       margin-right: 5px;
+    }
+    &:hover {
+      color: rgba($color: #fff, $alpha: 0.8);
     }
   }
 }

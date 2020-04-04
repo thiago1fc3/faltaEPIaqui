@@ -39,8 +39,10 @@ export default {
   },
 
   mounted() {
-    if(this.$store.state.user && this.$store.state.user.user_name)
+    if(this.$oauth.isAuthenticated) {
+      this.$toast.warning("Você já está autenticado.")
       this.$router.push('/')
+    }
   },
 
   methods: {
