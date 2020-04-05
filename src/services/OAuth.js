@@ -28,7 +28,7 @@ export default class OAuthTokenService {
     }
 
     async getTimeOffset() {
-        const timestampServer = new Date(await this.axios.get('/sts/timestamp').then(r => r.data)).getTime()
+        const timestampServer = new Date(await this.axios.get('sts/timestamp').then(r => r.data)).getTime()
         const timestampClient = Date.now()
 
         this.timeOffset = timestampClient - timestampServer
@@ -69,7 +69,7 @@ export default class OAuthTokenService {
     requestToken(data) {
         return this.axios({
             method: 'POST',
-            url: '/sts/oauth/token',
+            url: 'sts/oauth/token',
             //withCredentials: false,
             data: qs.stringify(data)
         }).then(res => res.data)
@@ -129,7 +129,7 @@ export default class OAuthTokenService {
 
     async logout() {
         if (!this.accessToken) return null
-        
+
         this.accessToken = null
         this.refreshToken = null
     }
