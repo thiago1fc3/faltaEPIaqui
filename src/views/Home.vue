@@ -13,7 +13,13 @@
         </div>
         <div class="menu">
           <div>
-            <h4>Filtre sua pesquisa:</h4>
+            <div class="header-menu">
+              <h4>Filtre sua pesquisa</h4>
+              <div class="open-close" @click="openCloseFilter()" :style="open ? '' : 'position:absolute;right: 0;top:20px'">
+                <i v-show="open" class="pi pi-chevron-left"></i>
+                <i v-show="!open" class="pi pi-chevron-right"></i>
+              </div>
+            </div>
             <span class="p-float-label">
               <InputText style="width: 100%" v-model="filter.q" @input="dSearch" />
               <label for="busca">Busca geral</label>
@@ -25,7 +31,7 @@
               <label for="busca">Por Estado, Rua, Cidade, etc.</label>
             </span>
           </div>
-          <div>
+          <div style="padding-bottom:50px">
             <h3>Status</h3>
             <div>
               <div>
@@ -339,14 +345,17 @@ export default {
       display: block;
       position: relative;
       padding: 0;
+      padding-bottom: 20px;
       overflow: hidden;
       transition: width 0.2s;
+      width: 20px;
     }
     .container-map {
       display: block;
       position: relative;
       padding: 0;
       transition: width 0.2s;
+      width: calc(100% - 20px);
     }
     @media (max-width: 992px) {
       .container-filter {
@@ -386,15 +395,25 @@ export default {
     overflow-y: auto;
     overflow-x: hidden;
 
-    h4 {
-      font-weight: normal;
+    .header-menu {
+      display: flex;
+      flex-direction: row;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0;
+      margin-bottom: 20px;
+
+      .open-close {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        cursor: pointer;
+      }
+      h4 {
+        font-weight: normal;
+        margin: 0;
+      }
     }
-  }
-  .open-close {
-    display: block;
-    position: absolute;
-    cursor: pointer;
-    padding: 5px 10px;
   }
 }
 </style>
