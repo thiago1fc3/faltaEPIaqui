@@ -1,12 +1,19 @@
 <template>
   <div ref="info">
     <template v-if="hospitalId && hospital && hospitalId === hospital.id">
-      <h1>{{hospital.nome}}</h1>
-      <h3>
-        {{hospital.contato}}
-        <br />
-        {{hospital.telefone}}
-      </h3>
+      <h2>{{hospital.nome}}</h2>
+      <div class="p-grid">
+        <div class="p-col-8 p-col-align-center">
+          {{hospital.contato}}
+          <br />
+          <strong>{{hospital.telefone}}</strong>
+        </div>
+        <div class="p-col-4 p-col-align-end">
+          Última atualização:
+          <strong>{{clock}}</strong>
+        </div>
+      </div>
+
       <div class="p-grid p-justify-center">
         <div class="p-col-12">
           <table>
@@ -39,7 +46,10 @@
             </tfoot>
             <tbody>
               <tr v-for="epi in hospital.epis" :key="epi.id">
-                <td>{{epi.descricao}}</td>
+                <td>
+                  {{epi.descricao }}
+                  <strong>({{epi.unidade}})</strong>
+                </td>
                 <td align="center">{{epi.qtd}}</td>
                 <td
                   v-if="hospital.status === 'PEDIDO_REALIZADO' || hospital.status === 'PEDIDO_ENCAMINHADO'"
@@ -62,18 +72,38 @@
         </div>
         <div class="p-col-12">
           <div class="p-grid p-justify-between">
-            <div class="p-col-7">
+            <div class="p-col-7 p-col-align-center">
               <div>{{hospital.endereco.formatado}}</div>
             </div>
-            <div style="text-align: right" class="p-col-5 align-end">
-              <Button
-                v-if="hospital.status === 'PEDIDO_ENCAMINHADO'"
-                @click.prevent.stop="darBaixaPedido()"
-                class="p-button-primary"
-                icon="pi pi-check"
-                iconPos="left"
-                label="DAR BAIXA"
-              />
+            <div style="text-align: center" class="p-col-5 p-col-align-center">
+              <template v-if="hospital.status === 'PEDIDO_ENCAMINHADO'">
+                <div class="p-grid align-center">
+                  <div class="p-col-12">
+                    <strong>Confirmar entrega?</strong>
+                  </div>
+                </div>
+                <div class="p-grid">
+                  <div class="p-col-6">
+                    <Button
+                      @click.prevent.stop="darBaixaPedido()"
+                      class="p-button-primary"
+                      icon="pi pi-check"
+                      iconPos="left"
+                      label="SIM"
+                    />
+                  </div>
+                  <div class="p-col-6">
+                    <Button
+                      @click.prevent.stop="darBaixaPedidoFalse()"
+                      class="p-button-danger"
+                      icon="pi pi-check"
+                      iconPos="left"
+                      label="NÃO"
+                    />
+                  </div>
+                </div>
+              </template>
+
               <Button
                 v-if="hospital.status === 'PEDIDO_REALIZADO'"
                 @click.prevent.stop="encaminharPedido()"
@@ -96,6 +126,7 @@
 </template>
 
 <script>
+import moment from "moment";
 import Button from "primevue/button";
 import InputText from "primevue/inputtext";
 import ProgressSpinner from "primevue/progressspinner";
@@ -108,8 +139,13 @@ export default {
   },
   data() {
     return {
-      hospital: null
+      hospital: null,
+      clock: moment()
     };
+  },
+
+  mounted() {
+    setInterval(this.updatedClock, 1000);
   },
 
   async updated() {
@@ -164,6 +200,28 @@ export default {
           await this.$emit("update", { id: this.hospital.id, status: resp });
           this.hospital = null;
         });
+    },
+
+    darBaixaPedidoFalse() {
+      let epis = this.hospital.epis.map(epi => {
+        return { id: epi.id, qtd: epi.qtdEnviada };
+      });
+      this.$rest.hospitais
+        .darBaixaPedidoFalse(this.hospital.id, epis)
+        .then(async resp => {
+          this.hospital.status = resp;
+          await this.$emit("update", { id: this.hospital.id, status: resp });
+          this.hospital = null;
+        });
+    },
+
+    updatedClock() {
+      let now = moment().valueOf();
+      if (this.hospital) {
+        let then = moment(this.hospital.updatedAt).valueOf();
+        let d = moment.duration(now - then, "milliseconds");
+        this.clock = moment.utc(d.asMilliseconds()).format("HH:mm:ss");
+      }
     }
   }
 };

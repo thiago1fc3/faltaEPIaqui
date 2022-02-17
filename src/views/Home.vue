@@ -2,8 +2,15 @@
   <div class="flexgrid-container">
     <navbar></navbar>
     <div class="p-grid basic-layout">
-      
       <div id="container-filter" class="container-filter">
+        <div
+          class="open-close"
+          @click="openCloseFilter()"
+          :style="open ? 'right: 20px' : 'right: -10px'"
+        >
+          <i v-show="open" class="pi pi-chevron-left"></i>
+          <i v-show="!open" class="pi pi-chevron-right"></i>
+        </div>
         <div class="menu">
           <div>
             <div class="header-menu">
@@ -75,7 +82,6 @@
       <div id="container-mapa" class="container-map">
         <div id="map" class="map"></div>
       </div>
-
     </div>
     <InfoHospital
       @update="clear($event)"
@@ -94,7 +100,7 @@ import "leaflet.heat";
 import "@/assets/js/leaflet/icon-material.js";
 import { debounce } from "@/util";
 import InfoHospital from "./InfoHospital";
-import navbar from "@/components/navbar.vue"
+import navbar from "@/components/navbar.vue";
 
 import Checkbox from "primevue/checkbox";
 import InputText from "primevue/inputtext";
@@ -122,7 +128,7 @@ export default {
       dSearch: debounce(() => this.search(), 200),
       heatLayer: null,
       markersGroup: null,
-
+      evtSource: null,
       icons: {
         NOVO: L.IconMaterial.icon({
           icon: "local_pharmacy",
@@ -151,22 +157,20 @@ export default {
     };
   },
   mounted() {
-    if(!this.$oauth.isAuthenticated) {
-      this.$toast.warning("Você não está autenticado. Por favor, faça login.")
-      this.$router.push('/login')
+    if (!this.$oauth.isAuthenticated) {
+      this.$toast.warning("Você não está autenticado. Por favor, faça login.");
+      this.$router.push("/login");
     }
 
     // close filter if width window < 600px
-    if(window.innerWidth < 600) {
-      document.getElementById('container-filter').style.width = '20px'
-      document.getElementById('container-mapa').style.width = 'calc(100% - 20px)'
-      this.open = false
+    if (window.innerWidth < 600) {
+      document.getElementById("container-filter").style.width = "20px";
+      document.getElementById("container-mapa").style.width =
+        "calc(100% - 20px)";
+      this.open = false;
     }
 
-    this.map = L.map("map", { zoomControl: false }).setView(
-      [-3.71664, -38.5423],
-      6
-    );
+    this.map = L.map("map").setView([-3.71664, -38.5423], 6);
     L.tileLayer(
       "https://cartodb-basemaps-{s}.global.ssl.fastly.net/light_all/{z}/{x}/{y}.png",
       {
@@ -190,46 +194,41 @@ export default {
     this.getEpis();
     this.search();
 
-    let evtSource = new EventSource(`${API_URL}api/stream/web`);
-
-    evtSource.onmessage = e => {
-      let event = JSON.parse(e.data);
-      if (event) {
-        this.updateMarker(event.data);
-        this.map.fitBounds(this.markersGroup.getBounds());
-      }
-    };
+    this.evtSource = new EventSource(`${API_URL}api/stream/web`);
+    this.evtSource.onmessage = this.onMessageHandler;
+    this.evtSource.onerror = this.onErrorHandler;
   },
   watch: {
-    'window.innerWidth': () => {
-      if(window.innerWidth < 600) {
-        document.getElementById('container-filter').style.width = '20px'
-        document.getElementById('container-mapa').style.width = 'calc(100% - 20px)'
-        this.open = false
+    "window.innerWidth": () => {
+      if (window.innerWidth < 600) {
+        document.getElementById("container-filter").style.width = "20px";
+        document.getElementById("container-mapa").style.width =
+          "calc(100% - 20px)";
+        this.open = false;
       }
     }
   },
   methods: {
     openCloseFilter() {
-      let filter = document.getElementById('container-filter')
-      let mapa = document.getElementById('container-mapa')
+      let filter = document.getElementById("container-filter");
+      let mapa = document.getElementById("container-mapa");
 
-      if(this.open) {
-        filter.style.width = '20px'
-        mapa.style.width = 'calc(100% - 20px)'
-        this.open = !this.open
+      if (this.open) {
+        filter.style.width = "20px";
+        mapa.style.width = "calc(100% - 20px)";
+        this.open = !this.open;
       } else {
-        if(window.innerWidth <= 600) {
-          filter.style.width = '80%'
-          mapa.style.width = '20%'
-        } else if(window.innerWidth <= 992) {
-          filter.style.width = '40%'
-          mapa.style.width = '60%'
+        if (window.innerWidth <= 600) {
+          filter.style.width = "80%";
+          mapa.style.width = "20%";
+        } else if (window.innerWidth <= 992) {
+          filter.style.width = "40%";
+          mapa.style.width = "60%";
         } else {
-          filter.style.width = '25%'
-          mapa.style.width = '75%'
+          filter.style.width = "25%";
+          mapa.style.width = "75%";
         }
-        this.open = !this.open
+        this.open = !this.open;
       }
     },
     getEpis() {
@@ -306,6 +305,26 @@ export default {
       });
       mark._id = id;
       return mark;
+    },
+
+    onMessageHandler(e) {
+      let event = JSON.parse(e.data);
+      if (event) {
+        this.updateMarker(event.data);
+        this.map.fitBounds(this.markersGroup.getBounds());
+      }
+    },
+
+    onErrorHandler(e) {
+      switch (e.target.readyState) {
+        case EventSource.CONNECTING:
+          break;
+        case EventSource.CLOSED:
+          this.evtSource = new EventSource(`${API_URL}api/stream/web`);
+          this.evtSource.onmessage = this.onMessageHandler;
+          this.evtSource.onerror = this.onErrorHandler;
+          break;
+      }
     }
   }
 };
@@ -338,7 +357,7 @@ export default {
       transition: width 0.2s;
       width: calc(100% - 20px);
     }
-    @media(max-width: 992px) {
+    @media (max-width: 992px) {
       .container-filter {
         width: 40%;
       }
@@ -346,7 +365,7 @@ export default {
         width: 60%;
       }
     }
-    @media(max-width: 600px) {
+    @media (max-width: 600px) {
       .container-filter {
         width: 80%;
       }
@@ -354,7 +373,7 @@ export default {
         width: 20%;
       }
     }
-    @media(min-width: 992px) {
+    @media (min-width: 992px) {
       .container-filter {
         width: 25%;
       }
@@ -362,7 +381,6 @@ export default {
         width: 75%;
       }
     }
-
   }
 
   .map {
